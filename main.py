@@ -8,9 +8,10 @@ from vehicle import *
 from matplotlib import collections as mcoll
 import dashboard
 
-NUM_LAPS = 22
+NUM_LAPS = 1
 dt = 0.01 # seconds
 TRACK_MODEL = "data/track.csv"
+START_LINE = [0, 0]
 
 ##############################
 #       MAIN FUNCTION        #
@@ -53,8 +54,10 @@ def main():
     track_x_list = track_xy['x']
     track_y_list = track_xy['y']
     track_r_list = track_xy['radius']
+    
     target_location = [0, 0]
-    while total_time < 90:
+    laps_completed = 0
+    while laps_completed < NUM_LAPS:
         # find target position
         car_velocity_heading = math.atan2(car_velocity[1], car_velocity[0])
         car_speed = (car_velocity[0]**2 + car_velocity[1]**2)**0.5 * math.cos(car_heading - car_velocity_heading)
@@ -68,6 +71,7 @@ def main():
                 distance_min_idx = i
         target_idx = (distance_min_idx + 3) % len(track_x_list)
         target_location = [target_location[0] + (track_x_list[target_idx] - target_location[0])*dt*10, target_location[1] + (track_y_list[target_idx] - target_location[1])*dt*10]
+
         # lookahead
         driver_lookahead_distance = int(driver_offset_lookahead + car_speed**2 * driver_gain_lookahead)
         radius_min = 1e12
@@ -88,21 +92,6 @@ def main():
         driver_integral_direction = np.clip(driver_integral_direction + delta_heading*driver_gain_I_direction*dt, -1, 1)
         steering = np.clip(delta_heading * driver_gain_P_direction + driver_integral_direction + (delta_heading-driver_last_delta_direction)*driver_gain_D_direction/dt, -1, 1)
         driver_last_delta_direction = delta_heading
-
-        # TODO: Car physics
-        # calculate requested torque
-        
-        try:
-            # calculate force on car
-            acc_x = 0
-            acc_y = 0
-            # Normal Forces on tires
-            Fz_fl = (0.5 * REAR_AXLE_TO_CG / WHEELBASE * M * g) - (ROLL_STIFFNESS_FRONT_RATIO * acc_y * M * CGH / TRACK_WIDTH) - (acc_x * M * CGH / WHEELBASE)
-            Fz_fr = (0.5 * REAR_AXLE_TO_CG / WHEELBASE * M * g) + (ROLL_STIFFNESS_FRONT_RATIO * acc_y * M * CGH / TRACK_WIDTH) - (acc_x * M * CGH / WHEELBASE)
-            Fz_rr = (0.5 * FRONT_AXLE_TO_CG / WHEELBASE * M * g) - (ROLL_STIFFNESS_REAR_RATIO * acc_y * M * CGH / TRACK_WIDTH) + (acc_x * M * CGH / WHEELBASE)
-            Fz_rl = (0.5 * FRONT_AXLE_TO_CG / WHEELBASE * M * g) + (ROLL_STIFFNESS_REAR_RATIO * acc_y * M * CGH / TRACK_WIDTH) + (acc_x * M * CGH / WHEELBASE)
-        except:
-            pass
 
         ### very simple thing for testing
         # update car heading
@@ -128,11 +117,12 @@ def main():
         # calculate new location
         car_location += car_velocity * dt
         
-                
-        # print(f"current time: {round(total_time, 3)}")
-        # print("car_velocity:", car_velocity)
-        # print("car_location:", car_location)
-        
+        # Check if the car has crossed the start/finish line
+        if (car_location[0] - START_LINE[0])**2 + (car_location[1] - START_LINE[1])**2 < 1:
+            if total_time > 1:  # Ensure that the car has moved away from the start line before counting a new lap
+                laps_completed += 1
+                print(f"Lap {laps_completed} completed in {round(total_time, 2)} seconds")
+                        
         print(round(total_time, 2), distance_min_idx, round(throttle, 2), round(steering, 2), round(car_speed, 2), round(target_speed, 2), round(car_heading, 3), round(car_slip_angle, 4))
         # print(total_time)
         

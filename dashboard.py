@@ -21,7 +21,7 @@ def display(car_speed_array, driver_x, driver_y, track_x_list, track_y_list, dri
     ), row=1, col=1)
     fig.add_trace(go.Scatter(
         x=driver_x, y=driver_y, mode='markers',
-        marker=dict(color=normalized_speed, colorscale='Turbo', size=5),
+        marker=dict(color=normalized_speed, colorscale='turbo', size=2),
         name='Speed Colormap',
         hovertemplate="Speed: %{text:.2f} m/s<extra></extra>",
         text=car_speed_array  # Display original speed in hover
