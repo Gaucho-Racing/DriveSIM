@@ -62,3 +62,35 @@ AMK_Torque = [21 for rpm in range(16000)] + [(49.8 - 0.0018 * rpm) for rpm in ra
 Emrax_Torque = [(0.02 * rpm + 220) for rpm in range(500)] + [230 for rpm in range(500, 5000)] + [(1190/3 - rpm/30) for rpm in range(5000, 6501)] # (N*m)
 AMK_Max_RPM = 20000
 Emrax_Max_RPM = 6500
+
+
+
+# HELPER FUNCTIONS
+def Battery_kWH_to_volts(kWH): #Cell voltage from energy (kWh) used
+    kWH /= 140 * 3
+    left = 0
+    right = CELL_CHGR_ARR_SIZE - 1
+    mid = (left + right) // 2
+    while right - left > 1:
+        if kWH > cell_kWH_tbl[mid]:
+            left = mid
+        elif kWH < cell_kWH_tbl[mid]:
+            right = mid
+        else:
+            return cell_volts_tbl[mid]
+        mid = (left + right) // 2
+    return cell_volts_tbl[left] + (cell_volts_tbl[right] - cell_volts_tbl[left]) * ((kWH - cell_kWH_tbl[left]) / (cell_kWH_tbl[right] - cell_kWH_tbl[left]))
+
+def Prep_battery_kWH_array(): #Cell voltage from energy (kWh) used
+    cell_kWH_count = 0
+    for i in range(CELL_CHGR_ARR_SIZE - 1):
+        cell_kWH_tbl.append(cell_kWH_count)
+        cell_kWH_count += (cell_volts_tbl[i] + cell_volts_tbl[i+1])/2 * (cell_charge_tbl[CELL_CHGR_ARR_SIZE - 2 - i] - cell_charge_tbl[CELL_CHGR_ARR_SIZE - 1 - i]) * 1e-6
+    cell_kWH_tbl.append(cell_kWH_count)
+
+def Heat_Gen_Accumulator(I_DC): # Heat generated (watts) by accumulator calculated from accumulator current
+    return Resistance_battery * I_DC**2
+
+def Heat_Gen_Motors(I_AC): # Heat generated (watts) by TS systen calculated from AC current
+    return 0 #TODO
+

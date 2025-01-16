@@ -6,40 +6,12 @@ import math
 import track_gen
 from vehicle import *
 from matplotlib import collections as mcoll
+from plotly.subplots import make_subplots
+import plotly.graph_objects as go
 
 NUM_LAPS = 22
 dt = 0.01 # seconds
-TRACK_MODEL = "data/xy.csv"
-
-# HELPER FUNCTIONS
-def Battery_kWH_to_volts(kWH): #Cell voltage from energy (kWh) used
-    kWH /= 140 * 3
-    left = 0
-    right = CELL_CHGR_ARR_SIZE - 1
-    mid = (left + right) // 2
-    while right - left > 1:
-        if kWH > cell_kWH_tbl[mid]:
-            left = mid
-        elif kWH < cell_kWH_tbl[mid]:
-            right = mid
-        else:
-            return cell_volts_tbl[mid]
-        mid = (left + right) // 2
-    return cell_volts_tbl[left] + (cell_volts_tbl[right] - cell_volts_tbl[left]) * ((kWH - cell_kWH_tbl[left]) / (cell_kWH_tbl[right] - cell_kWH_tbl[left]))
-
-def Prep_battery_kWH_array(): #Cell voltage from energy (kWh) used
-    cell_kWH_count = 0
-    for i in range(CELL_CHGR_ARR_SIZE - 1):
-        cell_kWH_tbl.append(cell_kWH_count)
-        cell_kWH_count += (cell_volts_tbl[i] + cell_volts_tbl[i+1])/2 * (cell_charge_tbl[CELL_CHGR_ARR_SIZE - 2 - i] - cell_charge_tbl[CELL_CHGR_ARR_SIZE - 1 - i]) * 1e-6
-    cell_kWH_tbl.append(cell_kWH_count)
-
-def Heat_Gen_Accumulator(I_DC): # Heat generated (watts) by accumulator calculated from accumulator current
-    return Resistance_battery * I_DC**2
-
-def Heat_Gen_Motors(I_AC): # Heat generated (watts) by TS systen calculated from AC current
-    return 0 #TODO
-
+TRACK_MODEL = "track.csv"
 
 ##############################
 #       MAIN FUNCTION        #
@@ -75,7 +47,10 @@ def main():
     driver_offset_lookahead = 1
     driver_corner_accel = 10
 
-    track_xy = pd.read_csv(TRACK_MODEL)
+    
+    track = pd.read_csv(TRACK_MODEL)
+    d_track = track_gen.discretize_track(track, 1)
+    track_xy = track_gen.generate_cartesian(d_track)
     track_x_list = track_xy['x']
     track_y_list = track_xy['y']
     track_r_list = track_xy['radius']
@@ -169,9 +144,6 @@ def main():
         car_speed_array.append(car_speed)
         driver_throttle_array.append(throttle*10)
         driver_steering_array.append(steering*10)
-    
-    from plotly.subplots import make_subplots
-    import plotly.graph_objects as go
 
     car_location_array = np.array(car_location_array)
     driver_x = car_location_array[:, 0]
