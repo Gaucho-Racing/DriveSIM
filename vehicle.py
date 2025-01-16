@@ -17,16 +17,16 @@ M = 280.155    # mass of car (kg)
 g = 9.81       # acceleration due to gravity (m/s^2)
 W = M*g        # weight of car (N)
 WHEELBASE = 1.525      # Wheelbase (meters)
-FRONT_M_BIAS = 0.450     # Front Fmass bias
-REAR_M_BIAS = 0.550     # Rear mass bias
+FRONT_M_BIAS = 0.40     # Front Fmass bias
+REAR_M_BIAS = 0.60     # Rear mass bias
 FRONT_AXLE_TO_CG = FRONT_M_BIAS*WHEELBASE      # Front axle to CG horizontal distance (meters)
 REAR_AXLE_TO_CG = WHEELBASE - FRONT_M_BIAS    # Rear axle to CG horizontal distance (meters)
 INCLINE = 0      # road incline (radians)
 TRACK_WIDTH = 1.194     # track width (m)
 
 # Suspension
-ROLL_STIFFNESS_FRONT = 1600 # Nm / deg
-ROLL_STIFFNESS_REAR = 1600 #Nm / deg
+ROLL_STIFFNESS_FRONT = 0.5 # Nm / deg
+ROLL_STIFFNESS_REAR = 0.5 #Nm / deg
 ROLL_STIFFNESS_REAR_RATIO = ROLL_STIFFNESS_REAR / (ROLL_STIFFNESS_FRONT + ROLL_STIFFNESS_REAR)
 ROLL_STIFFNESS_FRONT_RATIO = ROLL_STIFFNESS_FRONT / (ROLL_STIFFNESS_FRONT + ROLL_STIFFNESS_REAR)
 
@@ -56,6 +56,7 @@ AMK_Eff_Regen = 0.75    # Efficiency with gearbox->motor->inverter (%)
 Emrax_Eff_Drive = 0.85  # Efficiency with inverter->motor->chain (%)
 Emrax_Eff_Regen = 0.75  # Efficiency with chain->motor->inverter (%)
 Max_Power = 80          # (kW)
+Max_Regen_Power = 60    # (kW)
 AMK_Gear_Ratio = 12.8   # 12.8:1
 Emrax_Gear_Ratio = 3.4  # 3.4:1
 AMK_Torque = [21 for rpm in range(16000)] + [(49.8 - 0.0018 * rpm) for rpm in range(16000, 20001)] # (N*m)
