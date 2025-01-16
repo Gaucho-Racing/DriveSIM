@@ -2,40 +2,45 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from math import pi
+import math
 
 ##############################
 #     VEHICLE PARAMETERS     #
 ##############################
 
 # Aero
-Cd = 1.09       # drag coefficient
-Cl = -2.45      # coefficient of lift
-rho = 1.293     # density of air (kg/m^3)
-Acs = 0.6294092 # crosssectional area of car (m^2) from front
-Acl = 1.913493  # cross sectional area of car (m^2) from top
-dH = 0.3        # height from the ground of resultant drag force, (m)
+DRAG_COEFF = 1.09       # drag coefficient
+LIFT_COEFF = -2.45      # coefficient of lift
+AIR_DENSITY = 1.293     # density of air (kg/m^3)
+ACS_FRONT = 0.6294092 # crosssectional area of car (m^2) from front
+ACS_TOP = 1.913493  # cross sectional area of car (m^2) from top
+DRAG_HEIGHT = 0.3        # height from the ground of resultant drag force, (m)
 
 # Mass and Distribution
 CGH = 0.2032   # center of gravity height (m)
-m = 280.155    # mass of car (kg)
+M = 280.155    # mass of car (kg)
 g = 9.81       # acceleration due to gravity (m/s^2)
-W = m*g        # weight of car (N)
-L = 1.525      # Wheelbase (meters)
-Bf = 0.450     # Front Fmass bias
-Rf = 0.550     # Rear mass bias
-Lf = Bf*L      # Front axle to CG horizontal distance (meters)
-Lr = L - Lf    # Rear axle to CG horizontal distance (meters)
-theta = 0      # road incline (radians)
-TW = 1.194     # track width (m)
+W = M*g        # weight of car (N)
+WHEELBASE = 1.525      # Wheelbase (meters)
+FRONT_M_BIAS = 0.450     # Front Fmass bias
+REAR_M_BIAS = 0.550     # Rear mass bias
+FRONT_AXLE_TO_CG = FRONT_M_BIAS*WHEELBASE      # Front axle to CG horizontal distance (meters)
+REAR_AXLE_TO_CG = WHEELBASE - FRONT_M_BIAS    # Rear axle to CG horizontal distance (meters)
+INCLINE = 0      # road incline (radians)
+TRACK_WIDTH = 1.194     # track width (m)
+
+# Suspension
+ROLL_STIFFNESS_FRONT = 0 #TODO
+ROLL_STIFFNESS_REAR = 0 #TODO
 
 # Tires
-us = 1.67      # coefficient of static friction for tires
-uk = us*0.25   # coefficient of kinetic friction for tires
+STATIC_FRICTION = 1.67      # coefficient of static friction for tires
+KINETIC_FRICTION = STATIC_FRICTION*0.25   # coefficient of kinetic friction for tires
         #TTC TODO
-r_inch = 8     # radius of wheels (in)
-r = r_inch*2.54/100     # radius of tire (m)
-circumference = 3.1415*2*r  # circumference of tire (m)
-Crr = 0.014    # rolling resistance coefficient for each wheel
+WHEEL_RADIUS_INCH = 8     # radius of tires (in)
+WHEEL_RADIUS = WHEEL_RADIUS_INCH*2.54/100     # radius of tire (m)
+TIRE_CIRC = 3.1415*2*WHEEL_RADIUS  # circumference of tire (m)
+CRR = 0.014    # rolling resistance coefficient for each wheel
 
 # Battery
 Energy_battery_max = 5.927582577 # (kWh)
@@ -100,68 +105,6 @@ def Heat_Gen_Motors(I_AC): # Heat generated (watts) by TS systen calculated from
     return 0 #TODO
 
 
-# Functions for Kinetics
-def FDrag(velocity):
-    return 0.5 * rho * velocity**2 * Cd * Acs
-
-def FSlope(weight, theta):
-    return weight * np.sin(theta)
-
-def FLift(velocity):
-    return 0.5 * Cl * rho * Acl * velocity**2
-
-def FNormalf(velocity, acceleration):
-    return (Lr / L) * (W * np.cos(theta) - FLift(velocity)) - (CGH / L) * (W * np.sin(theta) + m * acceleration) - (CGH / L) * FDrag(velocity)
-
-def FNormalr(velocity, acceleration):
-    return (Lf / L) * (W * np.cos(theta) - FLift(velocity)) + (CGH / L) * (W * np.sin(theta) + m * acceleration) + (CGH / L) * FDrag(velocity)
-
-def FNormalin(velocity, radius, weight):
-    return weight / 2 - weight * ((velocity**2) / (g * radius)) * CGH / TW
-
-def FNormalout(velocity, radius, weight):
-    return weight / 2 + weight * ((velocity**2) / (g * radius)) * CGH / TW
-
-def Fresf(velocity, acceleration):
-    return FNormalf(velocity, acceleration) * 2 * Crr
-
-def Fresr(velocity, acceleration):
-    return FNormalr(velocity, acceleration) * 2 * Crr
-
-def TractiveLimitrear(velocity, acceleration):
-    return us * FNormalr(velocity, acceleration)
-
-def TractiveLimithubs(velocity, acceleration):
-    return us * FNormalf(velocity, acceleration)
-
-def TractiveLimitturnrear(velocity, acceleration, radius):
-    return us * 2 * FNormalin(velocity, radius, FNormalr(velocity, acceleration))
-
-def TractiveLimitturnfrontin(velocity, acceleration, radius):
-    return us * FNormalin(velocity, radius, FNormalf(velocity, acceleration))
-
-def TractiveLimitturnfrontout(velocity, acceleration, radius):
-    return us * FNormalout(velocity, radius, FNormalf(velocity, acceleration))
-
-def Fxrrear(motorRPM):
-    return Emrax_Torque[Emrax_Max_RPM] * Emrax_Gear_Ratio * Emrax_Eff_Drive / r
-
-def Fxrhubs(motorRPM):
-    return AMK_Torque[AMK_Max_RPM] * AMK_Gear_Ratio * AMK_Eff_Drive / r
-
-# Functions for Braking
-def maxbrakeforcerear(velocity, acceleration):
-    return us * (FNormalr(velocity, acceleration) + (Lf / L) * FLift(velocity))
-
-def maxbrakeforcefront(velocity, acceleration):
-    return us * (FNormalf(velocity, acceleration) + (Lr / L) * FLift(velocity))
-
-def maxbrakeforceinner(velocity, acceleration, radius):
-    return us * FNormalin(velocity, radius, FNormalf(velocity, acceleration) + (Lr / L) * FLift(velocity))
-
-def maxbrakeforceouter(velocity, acceleration, radius):
-    return us * FNormalout(velocity, radius, FNormalf(velocity, acceleration) + (Lr / L) * FLift(velocity))
-
 
 
 ##############################
@@ -173,16 +116,15 @@ dt = 0.01 # seconds
 def main():
     Prep_battery_kWH_array()
 
-    car_positon_array = []
+    car_location_array = []
     car_heading_array = []
-    car_speed_array = []
+    car_velocity_array = []
     
-    car_positon = [0, 0]
-    car_heading =  # radians, CCW is positive
+    car_location = [0, 0]
+    car_heading = -pi/2 # radians, CCW is positive
     total_time = 0 # seconds
     entry_speed = 0 # m/s
-
-    car_speed = 0 # m/s
+    car_velocity = np.array([entry_speed, 0], dtype = np.float32) # m/s
 
     driver_gain_speed = 0.1
     driver_gain_direction = 1
@@ -195,23 +137,65 @@ def main():
     track_y_list = track_xy['y']
     while total_time < 10:
         # TODO lookahead and find minimum radius
-        driver_lookahead_distance = driver_offset_lookahead + car_speed * driver_gain_lookahead
-        distance_max = 100000000
+        car_speed = (car_velocity[0]**2 + car_velocity[1]**2) ** 0.5
+        driver_lookahead_distance = driver_offset_lookahead + car_velocity[0] * driver_gain_lookahead
+        distance_min = 100000000
+        distance_min_idx = 0
         for i in range(len(track_x_list)):
-            distance = ((track_x_list - car_positon[0])**2 + (track_y_list - car_positon[1])**2) ** 0.5
-            if distance_max < distance:
-                distance_max = distance
+            distance = ((track_x_list[i] - car_location[0])**2 + (track_y_list[i] - car_location[1])**2) ** 0.5
+            # print("distance:", distance)
+            if distance_min > distance:
+                distance_min = distance
+                distance_min_idx = i
+        target_location = [track_x_list[distance_min_idx + 1], track_y_list[distance_min_idx + 1]]
         
-        target_speed = 5
-        target_angle = 0
+        target_speed = 5 # TODO
+        delta_location = np.array(target_location) - np.array(car_location)
+        target_heading = math.atan2(delta_location[1], delta_location[0])
 
-        throttle = np.clip((target_speed - car_speed) * driver_gain_speed, -1, 1)
-        steering = np.clip((target_heading - car_heading) * driver_gain_direction)
+        throttle = np.clip((target_speed - car_velocity[0]) * driver_gain_speed, -1, 1)
+        delta_heading = (target_heading - car_heading)%(pi*2)
+        if (delta_heading > pi):
+            delta_heading -= pi*2
+        steering = np.clip(delta_heading * driver_gain_direction)
+
+        # TODO: Car physics
+        # calculate requested torque
+        
+        # calculate force on car
+        acc_x = 0
+        acc_y = 0
+        # Normal Forces on tires
+        Fz_fl = (0.5 * REAR_AXLE_TO_CG / WHEELBASE * M * g) - (ROLL_STIFFNESS_FRONT*acc_y *M * CGH / DRAG_HEIGHT) - (acc_x * M * CGH / WHEELBASE)
+        Fz_fr = (0.5 * REAR_AXLE_TO_CG / WHEELBASE * M * g) - (ROLL_STIFFNESS_FRONT*acc_y *M * CGH / DRAG_HEIGHT) - (acc_x * M * CGH / WHEELBASE)
+        # Fz_rr = 
+        # Fz_rl = 
+        
+        # car coordinates
+        car_force = [0, 0] # Newtons
+        car_force[0] += throttle*1000
+        car_velocity_heading = math.atan2(car_velocity[1], car_velocity[0])
+        car_slip_angle = (car_velocity_heading - car_heading)%(pi*2)
+        if (car_slip_angle > pi):
+            car_slip_angle -= pi*2
+        if (abs(car_slip_angle) > pi/2):
+            car_slip_angle = pi - car_slip_angle
+        car_force[1] += car_slip_angle*1000*car_
+        # convert to world coordinates
+        car_force_world = [car_force[0] * math.cos(car_heading) + car_force[1] * math.sin(car_heading),
+                           car_force[0] * math.sin(car_heading) + car_force[1] * math.cos(car_heading)]
+        # calculate new velocity
+        car_velocity += np.array(car_force_world) / M * dt
+        
+                
+        print(f"current time: {round(total_time, 3)}")
+        print("car_velocity: ", car_velocity)
+        
         
         total_time += dt
-        car_positon_array.append(car_positon)
+        car_location_array.append(car_location)
         car_heading_array.append(car_heading)
-        car_speed_array.append(car_speed)
+        car_velocity_array.append(car_velocity)
     
 if __name__ == "__main__":
     main()
