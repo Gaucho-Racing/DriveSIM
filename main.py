@@ -6,12 +6,11 @@ import math
 import track_gen
 from vehicle import *
 from matplotlib import collections as mcoll
-from plotly.subplots import make_subplots
-import plotly.graph_objects as go
+import dashboard
 
 NUM_LAPS = 22
 dt = 0.01 # seconds
-TRACK_MODEL = "track.csv"
+TRACK_MODEL = "data/track.csv"
 
 ##############################
 #       MAIN FUNCTION        #
@@ -55,7 +54,7 @@ def main():
     track_y_list = track_xy['y']
     track_r_list = track_xy['radius']
     target_location = [0, 0]
-    while total_time < 10:
+    while total_time < 90:
         # find target position
         car_velocity_heading = math.atan2(car_velocity[1], car_velocity[0])
         car_speed = (car_velocity[0]**2 + car_velocity[1]**2)**0.5 * math.cos(car_heading - car_velocity_heading)
@@ -148,39 +147,12 @@ def main():
     car_location_array = np.array(car_location_array)
     driver_x = car_location_array[:, 0]
     driver_y = car_location_array[:, 1]
-    driver_velocity = car_velocity_array
-    driver_throttle = np.array(driver_throttle_array)
-    driver_steering = np.array(driver_steering_array)
-    driver_steering = np.array(driver_steering_array)
-
-    # Create subplots
-    fig = make_subplots(rows=3, cols=1, subplot_titles=("Track and Car Location", "Car Speed", "Driver Throttle and Steering"), shared_xaxes=True)
-
-    # Normalize the speed
-    car_speed_array = np.array(car_speed_array)
-    normalized_speed = (car_speed_array - car_speed_array.min()) / (car_speed_array.max() - car_speed_array.min())
-
-    # Track and Car Location with colormap of speed
-    fig.add_trace(go.Scatter(x=track_x_list, y=track_y_list, mode='lines', name='Track'), row=1, col=1)
-    fig.add_trace(go.Scatter(x=driver_x, y=driver_y, mode='lines', line=dict(color='blue'), name='Car Path'), row=1, col=1)
-    fig.add_trace(go.Scatter(x=driver_x, y=driver_y, mode='markers', marker=dict(color=normalized_speed, colorscale='Viridis', size=5), name='Speed Colormap'), row=1, col=1)
     
-    # Car Speed
-    fig.add_trace(go.Scatter(x=np.linspace(0, total_time, len(car_speed_array)), y=car_speed_array, mode='lines', name='Speed'), row=2, col=1)
+    
+    
+    dashboard.display(car_speed_array, driver_x, driver_y, track_x_list, track_y_list, driver_throttle_array, driver_steering_array, total_time)
 
-    # Driver Throttle and Steering
-    fig.add_trace(go.Scatter(x=np.linspace(0, total_time, len(driver_throttle_array)), y=driver_throttle_array, mode='lines', name='Throttle'), row=3, col=1)
-    fig.add_trace(go.Scatter(x=np.linspace(0, total_time, len(driver_steering_array)), y=driver_steering_array, mode='lines', name='Steering'), row=3, col=1)
-
-    # Update layout
-    fig.update_layout(height=900, width=1000, title_text="Simulation Results", showlegend=True)
-    fig.update_xaxes(title_text="Time (s)", row=2, col=1)
-    fig.update_xaxes(title_text="Time (s)", row=3, col=1)
-    fig.update_yaxes(title_text="Speed (m/s)", row=2, col=1)
-    fig.update_yaxes(title_text="Throttle / Steering", row=3, col=1)
-    fig.update_yaxes(scaleanchor="x", scaleratio=1, row=1, col=1)
-
-    fig.show()
+    
 
 if __name__ == "__main__":
     main()
