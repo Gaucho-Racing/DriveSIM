@@ -6,12 +6,8 @@ import math
 
 #discretize the track
 def discretize_track(df, step_size):
-    # Define the step size
-    step_size = 1  # You can change this value to any desired step size
-
     # Create a new list to hold the discretized track data
     discretized_data = []
-
     # Iterate over each row in the original data
     for _, row in df.iterrows():
         sector_length = row['length']
@@ -93,7 +89,7 @@ def generate_cartesian(track):
                 track_radius.append(radius)
                 
             
-            # If there's remaining length (fractional part), process it
+            # If there's remaining fractional length
             remaining_length = length - steps
             if remaining_length > 0:
                 delta_theta_step = delta_theta * (remaining_length / length)  # Adjust for the last portion of the arc
@@ -107,9 +103,8 @@ def generate_cartesian(track):
                 track_x.append(x)
                 track_y.append(y)
                 track_radius.append(radius)
-            
-            # Store the current radius for the next iteration to detect direction change
-            previous_radius = radius
+         
+            previous_radius = radius   # Store the current radius to detect direction change
             
     return pd.DataFrame({'x': track_x, 'y': track_y, 'radius': track_radius})
 

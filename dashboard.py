@@ -1,13 +1,16 @@
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 import numpy as np
+from vehicle import *
 
-def display(car_speed_array, driver_x, driver_y, track_x_list, track_y_list, driver_throttle_array, driver_steering_array, total_time):
+def display(vehicle_state_array, track_xy, total_time):
+    track_x_list = track_xy['x']
+    track_y_list = track_xy['y']
     # Create subplots
     fig = make_subplots(rows=2, cols=1, subplot_titles=("Track and Car Location", "Simulated Telemetry"))
 
     # Normalize the speed (still for the color map, but not for hover)
-    car_speed_array = np.array(car_speed_array)
+    car_speed_array = np.array([vehicle_state.speed for vehicle_state in vehicle_state_array])
     normalized_speed = (car_speed_array - car_speed_array.min()) / (car_speed_array.max() - car_speed_array.min())
 
     # Track and Car Location with colormap of speed
@@ -16,13 +19,19 @@ def display(car_speed_array, driver_x, driver_y, track_x_list, track_y_list, dri
         line=dict(color='white')
     ), row=1, col=1)
     fig.add_trace(go.Scatter(
-        x=driver_x, y=driver_y, mode='lines',
-        line=dict(color='cyan'), name='Car Path'
+        x=[vehicle_state.location[0] for vehicle_state in vehicle_state_array], 
+        y=[vehicle_state.location[1] for vehicle_state in vehicle_state_array], 
+        mode='lines',
+        line=dict(color='cyan'),
+        name='Car Path'
     ), row=1, col=1)
     fig.add_trace(go.Scatter(
-        x=driver_x, y=driver_y, mode='markers',
-        marker=dict(color=normalized_speed, colorscale='turbo', size=2),
-        name='Speed Colormap',
+        x=[vehicle_state.location[0] for vehicle_state in vehicle_state_array], 
+        y=[vehicle_state.location[1] for vehicle_state in vehicle_state_array], 
+        mode='markers',
+        marker=dict(color=normalized_speed, 
+        colorscale='turbo', size=2),
+        name='Velocity Map',
         hovertemplate="Speed: %{text:.2f} m/s<extra></extra>",
         text=car_speed_array  # Display original speed in hover
     ), row=1, col=1)
@@ -37,14 +46,14 @@ def display(car_speed_array, driver_x, driver_y, track_x_list, track_y_list, dri
 
     # Driver Throttle and Steering
     fig.add_trace(go.Scatter(
-        x=np.linspace(0, total_time, len(driver_throttle_array)),
-        y=driver_throttle_array, mode='lines',
+        x=np.linspace(0, total_time, len(vehicle_state_array)),
+        y=[vehicle_state.throttle for vehicle_state in vehicle_state_array], mode='lines',
         line=dict(color='orange'), name='Throttle',
         hovertemplate="Throttle: %{y:.2f}<extra></extra>"
     ), row=2, col=1)
     fig.add_trace(go.Scatter(
-        x=np.linspace(0, total_time, len(driver_steering_array)),
-        y=driver_steering_array, mode='lines',
+        x=np.linspace(0, total_time, len(vehicle_state_array)),
+        y=[vehicle_state.steering for vehicle_state in vehicle_state_array], mode='lines',
         line=dict(color='magenta'), name='Steering',
         hovertemplate="Steering: %{y:.2f}<extra></extra>"
     ), row=2, col=1)

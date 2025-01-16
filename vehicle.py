@@ -1,3 +1,7 @@
+from dataclasses import dataclass
+import math
+import numpy as np
+from math import pi
 
 ##############################
 #     VEHICLE PARAMETERS     #
@@ -30,14 +34,13 @@ ROLL_STIFFNESS_REAR = 1600 #Nm / deg
 ROLL_STIFFNESS_REAR_RATIO = ROLL_STIFFNESS_REAR / (ROLL_STIFFNESS_FRONT + ROLL_STIFFNESS_REAR)
 ROLL_STIFFNESS_FRONT_RATIO = ROLL_STIFFNESS_FRONT / (ROLL_STIFFNESS_FRONT + ROLL_STIFFNESS_REAR)
 
-
 # Tires
 STATIC_FRICTION = 1.67      # coefficient of static friction for tires
 KINETIC_FRICTION = STATIC_FRICTION*0.25   # coefficient of kinetic friction for tires
         #TTC TODO
 WHEEL_RADIUS_INCH = 8     # radius of tires (in)
 WHEEL_RADIUS = WHEEL_RADIUS_INCH*2.54/100     # radius of tire (m)
-TIRE_CIRC = 3.1415*2*WHEEL_RADIUS  # circumference of tire (m)
+TIRE_CIRC = 3.1415 * 2 * WHEEL_RADIUS  # circumference of tire (m)
 CRR = 0.014    # rolling resistance coefficient for each wheel
 
 # Battery
@@ -63,6 +66,104 @@ Emrax_Torque = [(0.02 * rpm + 220) for rpm in range(500)] + [230 for rpm in rang
 AMK_Max_RPM = 20000
 Emrax_Max_RPM = 6500
 
+
+@dataclass # to drive the vehicle
+class VehicleController: # all static
+    def __init__(self, driver_gain_speed, driver_gain_P_direction, driver_gain_I_direction, driver_gain_D_direction, driver_integral_direction, driver_last_delta_direction, driver_gain_lookahead, driver_offset_lookahead, driver_corner_accel):
+        self.driver_gain_speed = driver_gain_speed
+        self.driver_gain_P_direction = driver_gain_P_direction
+        self.driver_gain_I_direction = driver_gain_I_direction
+        self.driver_gain_D_direction = driver_gain_D_direction
+        self.driver_integral_direction = driver_integral_direction
+        self.driver_last_delta_direction = driver_last_delta_direction
+        self.driver_gain_lookahead = driver_gain_lookahead
+        self.driver_offset_lookahead = driver_offset_lookahead
+        self.driver_corner_accel = driver_corner_accel
+        self.min_dist_idx = 0
+        
+    driver_gain_speed: float
+    driver_gain_P_direction: float
+    driver_gain_I_direction: float
+    driver_gain_D_direction: float
+    driver_integral_direction: float
+    driver_last_delta_direction: float
+    driver_gain_lookahead: float
+    driver_offset_lookahead: float
+    driver_corner_accel: float
+    
+    min_dist_idx: int # for tracking idx
+
+    
+    def compute_traj_target(self, vehicle_state, track_xy, target_location, dt):
+        # load the raw lists of points
+        track_x_list = track_xy['x']
+        track_y_list = track_xy['y']
+        min_dist = 1e12
+        self.min_dist_idx = 0
+        for i in range(len(track_x_list)):
+            dist =  ((track_x_list[i] - vehicle_state.location[0])**2 + 
+                      (track_y_list[i] - vehicle_state.location[1])**2) ** 0.5
+            if min_dist > dist:
+                min_dist = dist
+                self.min_dist_idx = i
+                
+        target_idx = (self.min_dist_idx + 3) % len(track_x_list)
+        target_location = [target_location[0] + (track_x_list[target_idx] - target_location[0])*dt*10, 
+                            target_location[1] + (track_y_list[target_idx] - target_location[1])*dt*10]
+        
+        return target_location
+        
+        
+        
+    def compute_driver_controls(self, vehicle_state, track_xy, speed, target_location, dt):
+        track_r_list = track_xy['radius']
+        # lookahead
+        driver_lookahead_distance = int(self.driver_offset_lookahead + speed**2 * self.driver_gain_lookahead)
+        radius_min = 1e12
+        for i in range(self.min_dist_idx, self.min_dist_idx + driver_lookahead_distance):
+            if track_r_list[i%len(track_r_list)] == 0:
+                track_r_list[i%len(track_r_list)] = 1e12
+            if radius_min > abs(track_r_list[i%len(track_r_list)]):
+                radius_min = abs(track_r_list[i%len(track_r_list)])
+        
+        delta_location = np.array(target_location) - np.array(vehicle_state.location)
+        target_heading = math.atan2(delta_location[1], delta_location[0])
+        delta_heading = (target_heading - vehicle_state.heading)%(pi*2)
+        target_speed = np.clip((radius_min * self.driver_corner_accel)**0.5, 1, 30)
+
+        throttle = np.clip((target_speed - speed) * self.driver_gain_speed, -1, 1)
+        if (delta_heading > pi):
+            delta_heading -= pi*2
+        self.driver_integral_direction = np.clip(self.driver_integral_direction 
+                                                 + delta_heading*self.driver_gain_I_direction*dt, -1, 1)
+        steering = np.clip(delta_heading * self.driver_gain_P_direction + self.driver_integral_direction 
+                           + (delta_heading-self.driver_last_delta_direction)*self.driver_gain_D_direction/dt, -1, 1)
+        
+        self.driver_last_delta_direction = delta_heading
+        
+        return throttle, steering # (negative throttle is brakes)
+
+# Struct to track vehicle state
+@dataclass
+class VehicleState:
+    def __init__(self, location, heading, velocity, speed, throttle, steering):
+        self.location = location
+        self.heading = heading
+        self.velocity = velocity
+        self.speed = speed
+        self.throttle = throttle
+        self.steering = steering
+    def __str__(self):
+        return (f"Location: {self.location}, Heading: {self.heading}, Velocity: {self.velocity}, "
+                f"Speed: {self.speed}, Throttle: {self.throttle}, Steering: {self.steering}")
+    location: list
+    heading = float
+    velocity = list
+    speed = float
+    throttle = float
+    steering = float
+
+    
 
 
 # HELPER FUNCTIONS
