@@ -74,7 +74,6 @@ def main():
         vehicle_state.heading = vehicle_state.heading%(2*pi)
         
         
-        
         # car coordinates
         car_force = [0, 0] # Newtons
         car_force[0] += np.clip(throttle*80000 / speed, -2000, 2000)
@@ -103,13 +102,10 @@ def main():
                 print(f"Lap {laps_completed} completed in {round(total_time, 2)} seconds")
                         
         
-        # print(f"Current Simulation Time: {total_time}")
-        # print(round(total_time, 2), distance_min_idx, round(throttle, 2), round(steering, 2), round(car_speed, 2), round(target_speed, 2), round(car_heading, 3), round(car_slip_angle, 4))
-        # print(total_time)
         print(vehicle_state)
         
         total_time += dt
-        
+
         
         vehicle_state.throttle *= 10
         vehicle_state.steering *= 10 

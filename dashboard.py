@@ -10,7 +10,8 @@ def display(vehicle_state_array, track_xy, total_time):
     fig = make_subplots(rows=2, cols=1, subplot_titles=("Track and Car Location", "Simulated Telemetry"))
 
     # Normalize the speed (still for the color map, but not for hover)
-    car_speed_array = np.array([vehicle_state.speed for vehicle_state in vehicle_state_array])
+    car_speed_array = np.array([vehicle_state.speed for vehicle_state in vehicle_state_array]) 
+    car_speed_array_kph = car_speed_array * 3.6
     normalized_speed = (car_speed_array - car_speed_array.min()) / (car_speed_array.max() - car_speed_array.min())
 
     # Track and Car Location with colormap of speed
@@ -32,7 +33,7 @@ def display(vehicle_state_array, track_xy, total_time):
         marker=dict(color=normalized_speed, 
         colorscale='turbo', size=2),
         name='Velocity Map',
-        hovertemplate="Speed: %{text:.2f} m/s<extra></extra>",
+        hovertemplate="Speed: %{text:.2f} km/h<extra></extra>",
         text=car_speed_array  # Display original speed in hover
     ), row=1, col=1)
 
@@ -40,7 +41,7 @@ def display(vehicle_state_array, track_xy, total_time):
     fig.add_trace(go.Scatter(
         x=np.linspace(0, total_time, len(car_speed_array)),
         y=car_speed_array, mode='lines',
-        line=dict(color='lime'), name='Speed',
+        line=dict(color='cyan'), name='Speed',
         hovertemplate="Speed: %{y:.2f} m/s<extra></extra>"  # Show non-normalized speed in the car speed plot
     ), row=2, col=1)
 
@@ -48,13 +49,13 @@ def display(vehicle_state_array, track_xy, total_time):
     fig.add_trace(go.Scatter(
         x=np.linspace(0, total_time, len(vehicle_state_array)),
         y=[vehicle_state.throttle for vehicle_state in vehicle_state_array], mode='lines',
-        line=dict(color='orange'), name='Throttle',
+        line=dict(color='red'), name='Throttle',
         hovertemplate="Throttle: %{y:.2f}<extra></extra>"
     ), row=2, col=1)
     fig.add_trace(go.Scatter(
         x=np.linspace(0, total_time, len(vehicle_state_array)),
         y=[vehicle_state.steering for vehicle_state in vehicle_state_array], mode='lines',
-        line=dict(color='magenta'), name='Steering',
+        line=dict(color='white'), name='Steering',
         hovertemplate="Steering: %{y:.2f}<extra></extra>"
     ), row=2, col=1)
 
