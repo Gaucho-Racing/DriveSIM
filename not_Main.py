@@ -238,7 +238,7 @@ def main():
             if distanceToBraking(acc_y, next_radius, car_properties[i].velocity, car_properties[i].dist, distance[k]) <= car_properties[i].velocity * dt:
                 power_request = -200
             else:
-                power_request = 10
+                power_request = 80
         else:
             power_request = 80
         dist = car_properties[i].dist + dt * car_properties[i].velocity
