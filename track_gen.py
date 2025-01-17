@@ -7,7 +7,7 @@ import math
 #discretize the track
 def discretize_track(df, step_size):
     # Define the step size
-    step_size = 1  # You can change this value to any desired step size
+    # step_size = 1  # You can change this value to any desired step size
 
     # Create a new list to hold the discretized track data
     discretized_data = []

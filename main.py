@@ -45,7 +45,7 @@ def Heat_Gen_Motors(I_AC): # Heat generated (watts) by TS systen calculated from
 #       MAIN FUNCTION        #
 ##############################
 
-dt = 0.01 # seconds
+dt = 0.005 # seconds
 
 def main():
     Prep_battery_kWH_array()
@@ -63,24 +63,28 @@ def main():
     entry_speed = 0 # m/s
     car_velocity = np.array([entry_speed, 0], dtype = np.float32) # m/s
 
-    driver_gain_speed = 0.2
+    driver_gain_speed = 0.5
 
-    driver_gain_P_direction = 5
-    driver_gain_I_direction = 0.1
+    driver_gain_P_direction = 10
+    driver_gain_I_direction = 0
     driver_gain_D_direction = 0
     driver_integral_direction = 0
     driver_last_delta_direction = 0
 
-    driver_gain_lookahead = 0.03
+    driver_gain_lookahead = 0.025
     driver_offset_lookahead = 1
-    driver_corner_accel = 10
+    driver_corner_accel = 14
 
-    track_xy = pd.read_csv(TRACK_MODEL)
+    # track_xy = pd.read_csv(TRACK_MODEL)
+    track_step_size = 0.5
+    track = pd.read_csv("data/track.csv")
+    d_track = track_gen.discretize_track(track, track_step_size)
+    track_xy = track_gen.generate_cartesian(d_track)
     track_x_list = track_xy['x']
     track_y_list = track_xy['y']
     track_r_list = track_xy['radius']
     target_location = [0, 0]
-    while total_time < 10:
+    while total_time < 80:
         # find target position
         car_velocity_heading = math.atan2(car_velocity[1], car_velocity[0])
         car_speed = (car_velocity[0]**2 + car_velocity[1]**2)**0.5 * math.cos(car_heading - car_velocity_heading)
@@ -92,10 +96,10 @@ def main():
             if distance_min > distance:
                 distance_min = distance
                 distance_min_idx = i
-        target_idx = (distance_min_idx + 3) % len(track_x_list)
+        target_idx = (distance_min_idx + int(np.clip(car_speed/2, 3, 10)/track_step_size)) % len(track_x_list)
         target_location = [target_location[0] + (track_x_list[target_idx] - target_location[0])*dt*10, target_location[1] + (track_y_list[target_idx] - target_location[1])*dt*10]
         # lookahead
-        driver_lookahead_distance = int(driver_offset_lookahead + car_speed**2 * driver_gain_lookahead)
+        driver_lookahead_distance = int((driver_offset_lookahead + car_speed**2 * driver_gain_lookahead)/track_step_size)
         radius_min = 1e12
         for i in range(distance_min_idx, distance_min_idx + driver_lookahead_distance):
             if track_r_list[i%len(track_r_list)] == 0:
@@ -106,7 +110,7 @@ def main():
         delta_location = np.array(target_location) - np.array(car_location)
         target_heading = math.atan2(delta_location[1], delta_location[0])
         delta_heading = (target_heading - car_heading)%(pi*2)
-        target_speed = np.clip((radius_min * driver_corner_accel)**0.5, 1, 30)
+        target_speed = np.clip((radius_min * driver_corner_accel)**0.5, 1, 35)
 
         throttle = np.clip((target_speed - car_speed) * driver_gain_speed, -1, 1)
         if (delta_heading > pi):
@@ -136,7 +140,7 @@ def main():
         car_heading = car_heading%(2*pi)
         # car coordinates
         car_force = [0, 0] # Newtons
-        car_force[0] += np.clip(throttle*80000 / car_speed, -2000, 2000)
+        car_force[0] += np.clip(throttle*Max_Power*1e3 / car_speed, -3000, 3000)
         car_force[0] -= DRAG_COEFF*0.5*AIR_DENSITY*ACS_FRONT*car_speed**2
         car_slip_angle = (car_velocity_heading - car_heading)%(pi*2)
         if (car_slip_angle > pi):
@@ -167,8 +171,8 @@ def main():
         car_heading_array.append(car_heading)
         car_velocity_array.append([car_velocity[0], car_velocity[1]])
         car_speed_array.append(car_speed)
-        driver_throttle_array.append(throttle*10)
-        driver_steering_array.append(steering*10)
+        driver_throttle_array.append(throttle)
+        driver_steering_array.append(steering)
     
     from plotly.subplots import make_subplots
     import plotly.graph_objects as go
