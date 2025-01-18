@@ -59,12 +59,26 @@ AMK_Eff_Regen = 0.75    # Efficiency with gearbox->motor->inverter (%)
 Emrax_Eff_Drive = 0.85  # Efficiency with inverter->motor->chain (%)
 Emrax_Eff_Regen = 0.75  # Efficiency with chain->motor->inverter (%)
 Max_Power = 80          # (kW)
+Max_Regen_Power = 60    # (kW)
 AMK_Gear_Ratio = 12.8   # 12.8:1
 Emrax_Gear_Ratio = 3.4  # 3.4:1
 AMK_Torque = [21 for rpm in range(16000)] + [(49.8 - 0.0018 * rpm) for rpm in range(16000, 20001)] # (N*m)
 Emrax_Torque = [(0.02 * rpm + 220) for rpm in range(500)] + [230 for rpm in range(500, 5000)] + [(1190/3 - rpm/30) for rpm in range(5000, 6501)] # (N*m)
 AMK_Max_RPM = 20000
 Emrax_Max_RPM = 6500
+
+
+def PedalMapping(throttle, speed):
+    return np.clip(throttle*80000 / speed, -2000, 2000) # TODO: FIX
+
+
+def FDrag(velocity):
+    return DRAG_COEFF * 0.5 * AIR_DENSITY * ACS_FRONT* velocity**2
+
+def FLift(velocity):
+    return 0.5 * LIFT_COEFF * AIR_DENSITY * ACS_TOP * velocity**2
+
+
 
 
 @dataclass # to drive the vehicle
@@ -153,9 +167,14 @@ class VehicleState:
         self.speed = speed
         self.throttle = throttle
         self.steering = steering
+        
     def __str__(self):
-        return (f"Location: {self.location}, Heading: {self.heading}, Velocity: {self.velocity}, "
-                f"Speed: {self.speed}, Throttle: {self.throttle}, Steering: {self.steering}")
+        return (f"Location: {self.location} [m]<br>"
+                f"Heading: {self.heading} [rad]<br>"
+                f"Velocity: {self.velocity}<br>"
+                f"Speed: {self.speed} [m/s]<br>" 
+                f"Throttle: {self.throttle}<br>"
+                f"Steering: {self.steering}")
     location: list
     heading = float
     velocity = list
@@ -194,4 +213,6 @@ def Heat_Gen_Accumulator(I_DC): # Heat generated (watts) by accumulator calculat
 
 def Heat_Gen_Motors(I_AC): # Heat generated (watts) by TS systen calculated from AC current
     return 0 #TODO
+
+
 
