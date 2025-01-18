@@ -69,7 +69,7 @@ Emrax_Max_RPM = 6500
 
 
 def PedalMapping(throttle, speed):
-    return np.clip(throttle*80000 / speed, -2000, 2000) # TODO: FIX
+    return np.clip(throttle*Max_Power*1e3 / speed, -3000, 3000)
 
 
 def FDrag(velocity):
@@ -108,7 +108,7 @@ class VehicleController: # all static
     min_dist_idx: int # for tracking idx
 
     
-    def compute_traj_target(self, vehicle_state, track_xy, target_location, dt):
+    def compute_traj_target(self, vehicle_state, track_xy, target_location, dt, track_step_size):
         # load the raw lists of points
         track_x_list = track_xy['x']
         track_y_list = track_xy['y']
@@ -121,7 +121,7 @@ class VehicleController: # all static
                 min_dist = dist
                 self.min_dist_idx = i
                 
-        target_idx = (self.min_dist_idx + 3) % len(track_x_list)
+        target_idx = (self.min_dist_idx + int(np.clip(vehicle_state.speed/2, 3, 10)/track_step_size)) % len(track_x_list)
         target_location = [target_location[0] + (track_x_list[target_idx] - target_location[0])*dt*10, 
                             target_location[1] + (track_y_list[target_idx] - target_location[1])*dt*10]
         
@@ -129,10 +129,10 @@ class VehicleController: # all static
         
         
         
-    def compute_driver_controls(self, vehicle_state, track_xy, speed, target_location, dt):
+    def compute_driver_controls(self, vehicle_state, track_xy, speed, target_location, dt, track_step_size):
         track_r_list = track_xy['radius']
         # lookahead
-        driver_lookahead_distance = int(self.driver_offset_lookahead + speed**2 * self.driver_gain_lookahead)
+        driver_lookahead_distance = int((self.driver_offset_lookahead + speed**2 * self.driver_gain_lookahead)/track_step_size)
         radius_min = 1e12
         for i in range(self.min_dist_idx, self.min_dist_idx + driver_lookahead_distance):
             if track_r_list[i%len(track_r_list)] == 0:
@@ -143,7 +143,7 @@ class VehicleController: # all static
         delta_location = np.array(target_location) - np.array(vehicle_state.location)
         target_heading = math.atan2(delta_location[1], delta_location[0])
         delta_heading = (target_heading - vehicle_state.heading)%(pi*2)
-        target_speed = np.clip((radius_min * self.driver_corner_accel)**0.5, 1, 30)
+        target_speed = np.clip((radius_min * self.driver_corner_accel)**0.5, 1, 35)
 
         throttle = np.clip((target_speed - speed) * self.driver_gain_speed, -1, 1)
         if (delta_heading > pi):

@@ -8,8 +8,8 @@ from vehicle import *
 import dashboard
 import copy
 
-NUM_LAPS = 2
-dt = 0.01 # seconds
+NUM_LAPS = 1
+dt = 0.005 # seconds
 TRACK_MODEL = "data/track.csv"
 START_LINE = [0, 0]
 
@@ -21,7 +21,8 @@ dt = 0.01 # seconds
 
 def main():
     track = pd.read_csv(TRACK_MODEL)
-    d_track = track_gen.discretize_track(track, 1)
+    track_step_size = 0.5 # meters
+    d_track = track_gen.discretize_track(track, track_step_size)
     track_xy = track_gen.generate_cartesian(d_track)
     
     lap_times = []
@@ -37,15 +38,15 @@ def main():
                                  steering=0)
 
 
-    vehicle_controller = VehicleController(driver_gain_speed=0.2,
-                                           driver_gain_P_direction=5.0,
-                                           driver_gain_I_direction=0.1,
+    vehicle_controller = VehicleController(driver_gain_speed=0.5,
+                                           driver_gain_P_direction=10,
+                                           driver_gain_I_direction=0,
                                            driver_gain_D_direction=0,
                                            driver_integral_direction=0,
                                            driver_last_delta_direction=0,
-                                           driver_gain_lookahead=0.03,
+                                           driver_gain_lookahead=0.025,
                                            driver_offset_lookahead=1,
-                                           driver_corner_accel=10)
+                                           driver_corner_accel=14)
     
     # Prepare other Vehicle Settings
     Prep_battery_kWH_array()
@@ -57,8 +58,8 @@ def main():
     while laps_completed < NUM_LAPS:
         velocity_heading = math.atan2(vehicle_state.velocity[1], vehicle_state.velocity[0]) # velocity heading
         speed = (vehicle_state.velocity[0]**2 + vehicle_state.velocity[1]**2)**0.5 * math.cos(vehicle_state.heading - velocity_heading)
-        target_location = vehicle_controller.compute_traj_target(vehicle_state=vehicle_state,track_xy=track_xy, target_location=target_location, dt=dt)
-        throttle, steering = vehicle_controller.compute_driver_controls(vehicle_state=vehicle_state, track_xy=track_xy,speed=speed, target_location=target_location, dt=dt)
+        target_location = vehicle_controller.compute_traj_target(vehicle_state=vehicle_state,track_xy=track_xy, target_location=target_location, dt=dt, track_step_size=track_step_size)
+        throttle, steering = vehicle_controller.compute_driver_controls(vehicle_state=vehicle_state, track_xy=track_xy,speed=speed, target_location=target_location, dt=dt, track_step_size=track_step_size)
         
         vehicle_state = copy.deepcopy(vehicle_state)
         vehicle_state.speed = speed
