@@ -77,7 +77,7 @@ def display(vehicle_state_array, track_xy, total_time):
 
     # Create buttons for dropdown
     buttons = []
-    traces_per_lap = 5  # Number of traces per lap (path, velocity map, throttle, brake, speed)
+    traces_per_lap = 6  # Number of traces per lap (path, velocity map, throttle, brake, steering, speed)
     
     # Calculate average speed for each track point
     track_speeds = {}  # Dictionary to store speeds at each track point
@@ -106,8 +106,8 @@ def display(vehicle_state_array, track_xy, total_time):
         all_laps_x.extend([state.location[0] for state in lap_data])
         all_laps_y.extend([state.location[1] for state in lap_data])
         all_laps_speed.extend([state.speed for state in lap_data])
-        all_laps_throttle.extend([(state.throttle * 10) if state.throttle >= 0 else 0 for state in lap_data])
-        all_laps_brake.extend([-(state.throttle * 10) if state.throttle <= 0 else 0 for state in lap_data])
+        all_laps_throttle.extend([(state.throttle) if state.throttle >= 0 else 0 for state in lap_data])
+        all_laps_brake.extend([-(state.throttle) if state.throttle <= 0 else 0 for state in lap_data])
     
     # Add all laps traces
     fig.add_trace(go.Scatter(
@@ -142,6 +142,7 @@ def display(vehicle_state_array, track_xy, total_time):
     # Add sequential telemetry for all laps
     time_array = np.linspace(0, all_laps_time, len(all_laps_speed))
     
+    # Throttle
     fig.add_trace(go.Scatter(
         x=time_array,
         y=all_laps_throttle,
@@ -151,6 +152,7 @@ def display(vehicle_state_array, track_xy, total_time):
         hovertemplate="Throttle: %{y:.2f}<extra></extra>"
     ), row=2, col=1)
     
+    # Brake
     fig.add_trace(go.Scatter(
         x=time_array,
         y=all_laps_brake,
@@ -159,7 +161,18 @@ def display(vehicle_state_array, track_xy, total_time):
         name='Brake',
         hovertemplate="Brake: %{y:.2f}<extra></extra>"
     ), row=2, col=1)
-    
+
+    # Steering
+    fig.add_trace(go.Scatter(
+        x=time_array,
+        y=[state.steering for state in vehicle_state_array],
+        mode='lines',
+        line=dict(color='yellow'),
+        name='Steering',
+        hovertemplate="Steering: %{y:.2f}<extra></extra>"
+    ), row=2, col=1)
+
+    # Speed
     fig.add_trace(go.Scatter(
         x=time_array,
         y=all_laps_speed,
@@ -201,7 +214,7 @@ def display(vehicle_state_array, track_xy, total_time):
         # Throttle
         fig.add_trace(go.Scatter(
             x=time_array,
-            y=[(state.throttle * 10) if state.throttle >= 0 else 0 for state in lap_data],
+            y=[(state.throttle) if state.throttle >= 0 else 0 for state in lap_data],
             mode='lines',
             line=dict(color='lime'),
             name=f'Throttle Lap {lap_idx + 1}',
@@ -212,11 +225,22 @@ def display(vehicle_state_array, track_xy, total_time):
         # Brake
         fig.add_trace(go.Scatter(
             x=time_array,
-            y=[-(state.throttle * 10) if state.throttle <= 0 else 0 for state in lap_data],
+            y=[-(state.throttle) if state.throttle <= 0 else 0 for state in lap_data],
             mode='lines',
             line=dict(color='red'),
             name=f'Brake Lap {lap_idx + 1}',
             hovertemplate="Brake: %{y:.2f}<extra></extra>",
+            visible=False
+        ), row=2, col=1)
+        
+        # Steering for each lap
+        fig.add_trace(go.Scatter(
+            x=time_array,
+            y=[state.steering for state in lap_data],
+            mode='lines',
+            line=dict(color='yellow'),
+            name=f'Steering Lap {lap_idx + 1}',
+            hovertemplate="Steering: %{y:.2f}<extra></extra>",
             visible=False
         ), row=2, col=1)
         
@@ -311,7 +335,7 @@ def display(vehicle_state_array, track_xy, total_time):
     # Update layout
     fig.update_layout(
         height=1000,
-        width=1200,  # Increased width to accommodate table
+        width=1200,
         title_text="Simulation Results",
         showlegend=True,
         plot_bgcolor='black',
@@ -321,7 +345,7 @@ def display(vehicle_state_array, track_xy, total_time):
         updatemenus=[dict(
             type="dropdown",
             direction="down",
-            x=0.9,  # Moved dropdown slightly left to avoid overlap with table
+            x=0.9,
             y=1.15,
             showactive=True,
             buttons=buttons
@@ -331,7 +355,9 @@ def display(vehicle_state_array, track_xy, total_time):
     fig.update_xaxes(title_text="Time (s)", row=2, col=1, gridcolor='gray', zerolinecolor='gray')
     fig.update_xaxes(title_text="Time (s)", row=3, col=1, gridcolor='gray', zerolinecolor='gray')
     fig.update_yaxes(title_text="Speed (m/s)", row=3, col=1, gridcolor='gray', zerolinecolor='gray')
-    fig.update_yaxes(title_text="Throttle / Brake / Steering", row=2, col=1, gridcolor='gray', zerolinecolor='gray')
+    fig.update_yaxes(title_text="Throttle / Brake / Steering", row=2, col=1, 
+                     gridcolor='gray', zerolinecolor='gray',
+                     range=[-1, 2])  # Set y-axis range for inputs
     fig.update_yaxes(scaleanchor="x", scaleratio=1, row=1, col=1, gridcolor='gray', zerolinecolor='gray')
 
     fig.show()

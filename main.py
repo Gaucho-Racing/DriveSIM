@@ -10,7 +10,7 @@ import copy
 
 NUM_LAPS = 2
 dt = 0.01 # seconds
-TRACK_MODEL = "data/circle.csv"
+TRACK_MODEL = "data/track.csv"
 START_LINE = [0, 0]
 
 ##############################
