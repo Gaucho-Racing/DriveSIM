@@ -68,6 +68,10 @@ AMK_Max_RPM = 20000
 Emrax_Max_RPM = 6500
 
 
+
+
+
+
 def PedalMapping(throttle, speed):
     return np.clip(throttle*Max_Power*1e3 / speed, -3000, 3000)
 
@@ -110,20 +114,15 @@ class VehicleController: # all static
     
     def compute_traj_target(self, vehicle_state, track_xy, target_location, dt, track_step_size):
         # load the raw lists of points
-        track_x_list = track_xy['x']
-        track_y_list = track_xy['y']
-        min_dist = 1e12
-        self.min_dist_idx = 0
-        for i in range(len(track_x_list)):
-            dist =  ((track_x_list[i] - vehicle_state.location[0])**2 + 
-                      (track_y_list[i] - vehicle_state.location[1])**2) ** 0.5
-            if min_dist > dist:
-                min_dist = dist
-                self.min_dist_idx = i
+        track_x_array = np.array(track_xy['x'])
+        track_y_array = np.array(track_xy['y'])
+
+        distances = (track_x_array - vehicle_state.location[0])**2 + (track_y_array - vehicle_state.location[1])**2
+        self.min_dist_idx = np.argmin(distances)
                 
-        target_idx = (self.min_dist_idx + int(np.clip(vehicle_state.speed/2, 3, 10)/track_step_size)) % len(track_x_list)
-        target_location = [target_location[0] + (track_x_list[target_idx] - target_location[0])*dt*10, 
-                            target_location[1] + (track_y_list[target_idx] - target_location[1])*dt*10]
+        target_idx = (self.min_dist_idx + int(np.clip(vehicle_state.speed/2, 3, 10)/track_step_size)) % len(track_x_array)
+        target_location = [target_location[0] + (track_x_array[target_idx] - target_location[0])*dt*10, 
+                            target_location[1] + (track_y_array[target_idx] - target_location[1])*dt*10]
         
         return target_location
         
@@ -176,11 +175,14 @@ class VehicleState:
                 f"Throttle: {self.throttle}<br>"
                 f"Steering: {self.steering}")
     location: list
-    heading = float
-    velocity = list
-    speed = float
-    throttle = float
-    steering = float
+    heading: float
+    velocity: list
+    speed: float
+    throttle: float
+    steering: float
+    acc_x: float # longitudinal acceleration
+    acc_y: float # lateral acceleration
+    
 
     
 

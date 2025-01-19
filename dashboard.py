@@ -336,7 +336,7 @@ def display(vehicle_state_array, track_xy, total_time):
     fig.update_layout(
         height=1000,
         width=1200,
-        title_text="Simulation Results",
+        title_text="GR25 DriveSIM Endurance Results",
         showlegend=True,
         plot_bgcolor='black',
         paper_bgcolor='black',
