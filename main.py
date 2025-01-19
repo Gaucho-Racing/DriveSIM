@@ -8,7 +8,7 @@ from vehicle import *
 import dashboard
 import copy
 
-NUM_LAPS = 1
+NUM_LAPS = 10
 dt = 0.005 # seconds
 TRACK_MODEL = "data/track.csv"
 START_LINE = [0, 0]
@@ -19,7 +19,7 @@ START_LINE = [0, 0]
 
 dt = 0.01 # seconds
 
-def main():
+def main(): 
     track = pd.read_csv(TRACK_MODEL)
     track_step_size = 0.5 # meters
     d_track = track_gen.discretize_track(track, track_step_size)
@@ -58,8 +58,18 @@ def main():
     while laps_completed < NUM_LAPS:
         velocity_heading = math.atan2(vehicle_state.velocity[1], vehicle_state.velocity[0]) # velocity heading
         speed = (vehicle_state.velocity[0]**2 + vehicle_state.velocity[1]**2)**0.5 * math.cos(vehicle_state.heading - velocity_heading)
-        target_location = vehicle_controller.compute_traj_target(vehicle_state=vehicle_state,track_xy=track_xy, target_location=target_location, dt=dt, track_step_size=track_step_size)
-        throttle, steering = vehicle_controller.compute_driver_controls(vehicle_state=vehicle_state, track_xy=track_xy,speed=speed, target_location=target_location, dt=dt, track_step_size=track_step_size)
+        
+        target_location = vehicle_controller.compute_traj_target(vehicle_state=vehicle_state,
+                                                                 track_xy=track_xy, 
+                                                                 target_location=target_location, 
+                                                                 dt=dt, 
+                                                                 track_step_size=track_step_size)
+        
+        throttle, steering = vehicle_controller.compute_driver_controls(vehicle_state=vehicle_state, 
+                                                                        track_xy=track_xy,speed=speed, 
+                                                                        target_location=target_location, 
+                                                                        dt=dt, 
+                                                                        track_step_size=track_step_size)
         
         vehicle_state = copy.deepcopy(vehicle_state)
         vehicle_state.speed = speed
@@ -100,15 +110,23 @@ def main():
             if total_time > 1 and (total_time - last_lap_time) > 5:
                 laps_completed += 1
                 last_lap_time = total_time
-                print(f"Lap {laps_completed} completed at {round(total_time, 2)} seconds")
         
-        print(f"Simulating lap : {round(total_time, 3)}s at {dt}s per iteration")
+        # Create a progress bar using total_time and NUM_LAPS
+        if laps_completed == 0:
+            progress = int((total_time / 60) / NUM_LAPS * 50) # Assume ~60s per lap for first lap
+        else:
+            avg_lap_time = total_time / laps_completed
+            progress = int((laps_completed + (total_time - last_lap_time)/avg_lap_time) / NUM_LAPS * 50)
+        if int(total_time) % 25 == 0 and total_time - int(total_time) < 0.01:
+            print(f"\rSimulating: |{'█'*progress}{' '*(50-progress)}| Lap {laps_completed + 1}/{NUM_LAPS} ({round(total_time, 1)}s)", end='', flush=True)
+        
         
         total_time += dt
         
         vehicle_state_array.append(vehicle_state)
 
     
+    # print("\nGenerating Endurance Telemetry Visualization...")
     dashboard.display(vehicle_state_array, track_xy, total_time)
 
     

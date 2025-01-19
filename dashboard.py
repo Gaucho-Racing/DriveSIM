@@ -207,7 +207,7 @@ def display(vehicle_state_array, track_xy, total_time):
             marker=dict(color=normalized_speed, colorscale='turbo', size=2),
             name=f'Velocity Map Lap {lap_idx + 1}',
             hovertemplate="%{text}<extra></extra>",
-            text=[str(state) for state in lap_data],
+            text=[state.display() for state in lap_data],
             visible=False
         ), row=1, col=1)
         
@@ -282,14 +282,14 @@ def display(vehicle_state_array, track_xy, total_time):
 
     # Fix the initial visibility settings
     total_traces = 1 + traces_per_lap + (len(laps) * traces_per_lap) + 1  # Track + All laps traces + Individual lap traces + Table
-    print(f"Total traces: {total_traces}")
-    print(f"Number of laps: {len(laps)}")
-    print(f"Traces per lap: {traces_per_lap}")
-    print(f"Actual number of traces in fig: {len(fig.data)}")
+    # print(f"Total traces: {total_traces}")
+    # print(f"Number of laps: {len(laps)}")
+    # print(f"Traces per lap: {traces_per_lap}")
+    # print(f"Actual number of traces in fig: {len(fig.data)}")
     
     # Print out all trace names to debug
-    for i, trace in enumerate(fig.data):
-        print(f"Trace {i}: {trace.name}")
+    # for i, trace in enumerate(fig.data):
+    #     print(f"Trace {i}: {trace.name}")
     
     initial_visibility = [False] * total_traces
     initial_visibility[0] = True  # Track always visible
@@ -305,7 +305,7 @@ def display(vehicle_state_array, track_xy, total_time):
     
     # All Laps button
     all_laps_visibility = initial_visibility.copy()
-    print("\nAll Laps visibility:", all_laps_visibility)
+    # print("\nAll Laps visibility:", all_laps_visibility)
     buttons.append(dict(
         args=[{"visible": all_laps_visibility}],
         label="All Laps",
@@ -321,10 +321,10 @@ def display(vehicle_state_array, track_xy, total_time):
         lap_visibility[start_idx:end_idx] = [True] * traces_per_lap
         lap_visibility[-1] = True  # Keep table visible
         
-        print(f"\nLap {lap_idx + 1} visibility:")
-        print(f"Start index: {start_idx}")
-        print(f"End index: {end_idx}")
-        print(f"Visibility array: {lap_visibility}")
+        # print(f"\nLap {lap_idx + 1} visibility:")
+        # print(f"Start index: {start_idx}")
+        # print(f"End index: {end_idx}")
+        # print(f"Visibility array: {lap_visibility}")
         
         buttons.append(dict(
             args=[{"visible": lap_visibility}],
