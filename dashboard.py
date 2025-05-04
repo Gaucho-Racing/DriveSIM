@@ -57,9 +57,10 @@ def display(vehicle_state_array, track_xy, total_time):
 
     # Create figure with subplots
     fig = make_subplots(
-        rows=3, cols=2,  # Changed to 2 columns to put table on right
-        subplot_titles=("Track and Car Location", "", "Simulated Telemetry", "Lap Statistics"),  # Added title for table
-        specs=[[{"type": "scatter", "colspan": 1}, {"type": "table", "rowspan": 3}],
+        rows=4, cols=2,  # Changed to 4 rows to add acceleration plot
+        subplot_titles=("Track and Car Location", "", "Simulated Telemetry", "Speed", "Acceleration", "Lap Statistics"),  # Added title for acceleration
+        specs=[[{"type": "scatter", "colspan": 1}, {"type": "table", "rowspan": 4}],
+               [{"type": "scatter"}, None],
                [{"type": "scatter"}, None],
                [{"type": "scatter"}, None]],
         column_widths=[0.7, 0.3]  # Make the table column narrower
@@ -77,7 +78,7 @@ def display(vehicle_state_array, track_xy, total_time):
 
     # Create buttons for dropdown
     buttons = []
-    traces_per_lap = 6  # Number of traces per lap (path, velocity map, throttle, brake, steering, speed)
+    traces_per_lap = 7  # Number of traces per lap (path, velocity map, throttle, brake, steering, speed, acceleration)
     
     # Calculate average speed for each track point
     track_speeds = {}  # Dictionary to store speeds at each track point
@@ -182,6 +183,19 @@ def display(vehicle_state_array, track_xy, total_time):
         hovertemplate="Speed: %{y:.2f} m/s<extra></extra>"
     ), row=3, col=1)
 
+    # Compute acceleration (finite difference of speed)
+    all_laps_acceleration = np.gradient(all_laps_speed, time_array)
+
+    # Add acceleration plot (row=4, col=1)
+    fig.add_trace(go.Scatter(
+        x=time_array,
+        y=all_laps_acceleration,
+        mode='lines',
+        line=dict(color='magenta'),
+        name='Acceleration',
+        hovertemplate="Acceleration: %{y:.2f} m/s²<extra></extra>"
+    ), row=4, col=1)
+
     # Add individual lap traces
     for lap_idx, lap_data in enumerate(laps):
         lap_time = len(lap_data) * dt
@@ -254,6 +268,18 @@ def display(vehicle_state_array, track_xy, total_time):
             hovertemplate="Speed: %{y:.2f} m/s<extra></extra>",
             visible=False
         ), row=3, col=1)
+
+        # Acceleration
+        car_accel_array = np.gradient(car_speed_array, time_array)
+        fig.add_trace(go.Scatter(
+            x=time_array,
+            y=car_accel_array,
+            mode='lines',
+            line=dict(color='magenta'),
+            name=f'Acceleration Lap {lap_idx + 1}',
+            hovertemplate="Acceleration: %{y:.2f} m/s²<extra></extra>",
+            visible=False
+        ), row=4, col=1)
 
     # Add table with corrected data formatting
     fig.add_trace(
@@ -334,7 +360,7 @@ def display(vehicle_state_array, track_xy, total_time):
 
     # Update layout
     fig.update_layout(
-        height=1000,
+        height=1300,  # Increased height for extra plot
         width=1200,
         title_text="GR25 DriveSIM Endurance Results",
         showlegend=True,
@@ -354,7 +380,9 @@ def display(vehicle_state_array, track_xy, total_time):
     
     fig.update_xaxes(title_text="Time (s)", row=2, col=1, gridcolor='gray', zerolinecolor='gray')
     fig.update_xaxes(title_text="Time (s)", row=3, col=1, gridcolor='gray', zerolinecolor='gray')
+    fig.update_xaxes(title_text="Time (s)", row=4, col=1, gridcolor='gray', zerolinecolor='gray')  # New for acceleration
     fig.update_yaxes(title_text="Speed (m/s)", row=3, col=1, gridcolor='gray', zerolinecolor='gray')
+    fig.update_yaxes(title_text="Acceleration (m/s²)", row=4, col=1, gridcolor='gray', zerolinecolor='gray')  # New for acceleration
     fig.update_yaxes(title_text="Throttle / Brake / Steering", row=2, col=1, 
                      gridcolor='gray', zerolinecolor='gray',
                      range=[-1, 2])  # Set y-axis range for inputs
