@@ -8,7 +8,7 @@ from vehicle import *
 import dashboard
 import copy
 
-NUM_LAPS = 10
+NUM_LAPS = 3
 dt = 0.005 # seconds
 TRACK_MODEL = "data/track.csv"
 START_LINE = [0, 0]
@@ -38,14 +38,14 @@ def main():
                                  steering=0)
 
 
-    vehicle_controller = VehicleController(driver_gain_speed=0.5,
-                                           driver_gain_P_direction=10,
+    vehicle_controller = VehicleController(driver_gain_speed=0.6,
+                                           driver_gain_P_direction=9,
                                            driver_gain_I_direction=0,
                                            driver_gain_D_direction=0,
-                                           driver_integral_direction=0,
+                                           driver_integral_direction=0.05,
                                            driver_last_delta_direction=0,
-                                           driver_gain_lookahead=0.025,
-                                           driver_offset_lookahead=1,
+                                           driver_gain_lookahead=0.03,
+                                           driver_offset_lookahead=0.5,
                                            driver_corner_accel=14)
     
     # Prepare other Vehicle Settings

@@ -74,7 +74,6 @@ Emrax_Max_RPM = 6500
 def PedalMapping(throttle, speed):
     return np.clip(throttle*Max_Power*1e3 / speed, -3000, 3000)
 
-
 def FDrag(velocity):
     return DRAG_COEFF * 0.5 * AIR_DENSITY * ACS_FRONT* velocity**2
 
