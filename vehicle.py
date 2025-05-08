@@ -18,7 +18,7 @@ DRAG_HEIGHT = 0.3        # height from the ground of resultant drag force, (m)
 
 # Mass and Distribution
 CGH = 0.2032   # center of gravity height (m)
-M = 280.155    # mass of car (kg)
+M = 340    # mass of car (kg)
 g = 9.81       # acceleration due to gravity (m/s^2)
 W = M*g        # weight of car (N)
 WHEELBASE = 1.525      # Wheelbase (meters)
@@ -67,6 +67,7 @@ AMK_Max_RPM = 20000
 Emrax_Max_RPM = 6500
 
 
+# quicksort
 
 
 
