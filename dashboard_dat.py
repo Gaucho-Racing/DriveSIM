@@ -73,12 +73,12 @@ fig.add_trace(go.Scatter(
     x=time, y=brake_norm, mode='lines', name='Brake (norm)', line=dict(color='red')
 ), row=2, col=1)
 fig.add_trace(go.Scatter(
-    x=time, y=steering_norm, mode='lines', name='Steering (norm)', line=dict(color='yellow')
+    x=time, y=steering_norm, mode='lines', name='Steering (norm)', line=dict(color='black')
 ), row=2, col=1)
 
 # Speed
 fig.add_trace(go.Scatter(
-    x=time, y=speed, mode='lines', name='Speed', line=dict(color='cyan')
+    x=time, y=speed, mode='lines', name='Speed', line=dict(color='darkblue')
 ), row=3, col=1)
 
 # Acceleration
@@ -92,18 +92,18 @@ fig.update_layout(
     width=1000,
     title_text="DriveSIM Endurance Telemetry from .dat File",
     showlegend=True,
-    plot_bgcolor='black',
-    paper_bgcolor='black',
-    font=dict(color='white'),
-    title_font=dict(color='white'),
+    plot_bgcolor='white',
+    paper_bgcolor='white',
+    font=dict(color='black'),
+    title_font=dict(color='black'),
 )
 
-fig.update_xaxes(title_text="Time (s)", row=2, col=1, gridcolor='gray', zerolinecolor='gray')
-fig.update_xaxes(title_text="Time (s)", row=3, col=1, gridcolor='gray', zerolinecolor='gray')
-fig.update_xaxes(title_text="Time (s)", row=4, col=1, gridcolor='gray', zerolinecolor='gray')
-fig.update_yaxes(title_text="Speed (m/s)", row=3, col=1, gridcolor='gray', zerolinecolor='gray')
-fig.update_yaxes(title_text="Acceleration (m/s²)", row=4, col=1, gridcolor='gray', zerolinecolor='gray')
-fig.update_yaxes(title_text="Normalized Throttle / Brake [0-1], Steering [-1,1]", row=2, col=1, gridcolor='gray', zerolinecolor='gray')
-fig.update_yaxes(scaleanchor="x", scaleratio=1, row=1, col=1, gridcolor='gray', zerolinecolor='gray')
+fig.update_xaxes(title_text="Time (s)", row=2, col=1, gridcolor='lightgray', zerolinecolor='lightgray', color='black')
+fig.update_xaxes(title_text="Time (s)", row=3, col=1, gridcolor='lightgray', zerolinecolor='lightgray', color='black')
+fig.update_xaxes(title_text="Time (s)", row=4, col=1, gridcolor='lightgray', zerolinecolor='lightgray', color='black')
+fig.update_yaxes(title_text="Speed (m/s)", row=3, col=1, gridcolor='lightgray', zerolinecolor='lightgray', color='black')
+fig.update_yaxes(title_text="Acceleration (m/s²)", row=4, col=1, gridcolor='lightgray', zerolinecolor='lightgray', color='black')
+fig.update_yaxes(title_text="Normalized Throttle / Brake [0-1], Steering [-1,1]", row=2, col=1, gridcolor='lightgray', zerolinecolor='lightgray', color='black')
+fig.update_yaxes(scaleanchor="x", scaleratio=1, row=1, col=1, gridcolor='lightgray', zerolinecolor='lightgray', color='black')
 
 fig.show() 

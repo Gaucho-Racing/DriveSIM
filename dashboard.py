@@ -58,9 +58,9 @@ def display(vehicle_state_array, track_xy, total_time):
     # Create figure with subplots
     fig = make_subplots(
         rows=4, cols=2,  # Changed to 4 rows to add acceleration plot
-        subplot_titles=("Track and Car Location", "", "Simulated Telemetry", "Speed", "Acceleration", "Lap Statistics"),  # Added title for acceleration
-        specs=[[{"type": "scatter", "colspan": 1}, {"type": "table", "rowspan": 4}],
-               [{"type": "scatter"}, None],
+        subplot_titles=("Track and Car Location", "Lap Statistics", "Simulated Telemetry", "Acceleration Circle", "Speed", "", "Acceleration", ""),  # Added title for acceleration circle
+        specs=[[{"type": "scatter", "colspan": 1}, {"type": "table", "rowspan": 2}],
+               [{"type": "scatter"}, {"type": "scatter"}],
                [{"type": "scatter"}, None],
                [{"type": "scatter"}, None]],
         column_widths=[0.7, 0.3]  # Make the table column narrower
@@ -78,7 +78,7 @@ def display(vehicle_state_array, track_xy, total_time):
 
     # Create buttons for dropdown
     buttons = []
-    traces_per_lap = 7  # Number of traces per lap (path, velocity map, throttle, brake, steering, speed, acceleration)
+    traces_per_lap = 8  # Number of traces per lap (path, velocity map, throttle, brake, steering, speed, acceleration, acceleration circle)
     
     # Calculate average speed for each track point
     track_speeds = {}  # Dictionary to store speeds at each track point
@@ -168,7 +168,7 @@ def display(vehicle_state_array, track_xy, total_time):
         x=time_array,
         y=[state.steering for state in vehicle_state_array],
         mode='lines',
-        line=dict(color='yellow'),
+        line=dict(color='white'),
         name='Steering',
         hovertemplate="Steering: %{y:.2f}<extra></extra>"
     ), row=2, col=1)
@@ -178,7 +178,7 @@ def display(vehicle_state_array, track_xy, total_time):
         x=time_array,
         y=all_laps_speed,
         mode='lines',
-        line=dict(color='cyan'),
+        line=dict(color='darkblue'),
         name='Speed',
         hovertemplate="Speed: %{y:.2f} m/s<extra></extra>"
     ), row=3, col=1)
@@ -195,6 +195,38 @@ def display(vehicle_state_array, track_xy, total_time):
         name='Acceleration',
         hovertemplate="Acceleration: %{y:.2f} m/s²<extra></extra>"
     ), row=4, col=1)
+
+    # Add acceleration circle for all laps (row=2, col=2)
+    # Calculate longitudinal and lateral accelerations from velocity changes
+    all_laps_acc_x = []
+    all_laps_acc_y = []
+    for lap_data in laps:
+        lap_velocities = np.array([[state.velocity[0], state.velocity[1]] for state in lap_data])
+        lap_headings = np.array([state.heading for state in lap_data])
+        
+        # Calculate acceleration in world coordinates
+        if len(lap_velocities) > 1:
+            acc_world = np.gradient(lap_velocities, dt, axis=0)
+            
+            # Convert to car coordinates (longitudinal/lateral)
+            for i, (acc_w, heading) in enumerate(zip(acc_world, lap_headings)):
+                # Rotate acceleration to car frame
+                acc_long = acc_w[0] * np.cos(heading) + acc_w[1] * np.sin(heading)  # longitudinal
+                acc_lat = -acc_w[0] * np.sin(heading) + acc_w[1] * np.cos(heading)  # lateral
+                all_laps_acc_x.append(acc_long)
+                all_laps_acc_y.append(acc_lat)
+        else:
+            all_laps_acc_x.extend([0] * len(lap_data))
+            all_laps_acc_y.extend([0] * len(lap_data))
+    
+    fig.add_trace(go.Scatter(
+        x=all_laps_acc_x,
+        y=all_laps_acc_y,
+        mode='markers',
+        marker=dict(color='blue', size=2, opacity=0.6),
+        name='Acceleration Circle All Laps',
+        hovertemplate="Longitudinal Acc: %{x:.2f} m/s²<br>Lateral Acc: %{y:.2f} m/s²<extra></extra>"
+    ), row=2, col=2)
 
     # Add individual lap traces
     for lap_idx, lap_data in enumerate(laps):
@@ -252,7 +284,7 @@ def display(vehicle_state_array, track_xy, total_time):
             x=time_array,
             y=[state.steering for state in lap_data],
             mode='lines',
-            line=dict(color='yellow'),
+            line=dict(color='black'),
             name=f'Steering Lap {lap_idx + 1}',
             hovertemplate="Steering: %{y:.2f}<extra></extra>",
             visible=False
@@ -263,7 +295,7 @@ def display(vehicle_state_array, track_xy, total_time):
             x=time_array,
             y=car_speed_array,
             mode='lines',
-            line=dict(color='cyan'),
+            line=dict(color='darkblue'),
             name=f'Speed Lap {lap_idx + 1}',
             hovertemplate="Speed: %{y:.2f} m/s<extra></extra>",
             visible=False
@@ -280,6 +312,37 @@ def display(vehicle_state_array, track_xy, total_time):
             hovertemplate="Acceleration: %{y:.2f} m/s²<extra></extra>",
             visible=False
         ), row=4, col=1)
+
+        # Acceleration Circle
+        lap_velocities = np.array([[state.velocity[0], state.velocity[1]] for state in lap_data])
+        lap_headings = np.array([state.heading for state in lap_data])
+        lap_acc_x = []
+        lap_acc_y = []
+        
+        # Calculate acceleration in world coordinates
+        if len(lap_velocities) > 1:
+            acc_world = np.gradient(lap_velocities, dt, axis=0)
+            
+            # Convert to car coordinates (longitudinal/lateral)
+            for i, (acc_w, heading) in enumerate(zip(acc_world, lap_headings)):
+                # Rotate acceleration to car frame
+                acc_long = acc_w[0] * np.cos(heading) + acc_w[1] * np.sin(heading)  # longitudinal
+                acc_lat = -acc_w[0] * np.sin(heading) + acc_w[1] * np.cos(heading)  # lateral
+                lap_acc_x.append(acc_long)
+                lap_acc_y.append(acc_lat)
+        else:
+            lap_acc_x = [0] * len(lap_data)
+            lap_acc_y = [0] * len(lap_data)
+            
+        fig.add_trace(go.Scatter(
+            x=lap_acc_x,
+            y=lap_acc_y,
+            mode='markers',
+            marker=dict(color='red', size=3, opacity=0.7),
+            name=f'Acceleration Circle Lap {lap_idx + 1}',
+            hovertemplate="Longitudinal Acc: %{x:.2f} m/s²<br>Lateral Acc: %{y:.2f} m/s²<extra></extra>",
+            visible=False
+        ), row=2, col=2)
 
     # Add table with corrected data formatting
     fig.add_trace(
@@ -364,28 +427,122 @@ def display(vehicle_state_array, track_xy, total_time):
         width=1200,
         title_text="GR25 DriveSIM Endurance Results",
         showlegend=True,
-        plot_bgcolor='black',
-        paper_bgcolor='black',
-        font=dict(color='white'),
-        title_font=dict(color='white'),
-        updatemenus=[dict(
-            type="dropdown",
-            direction="down",
-            x=0.9,
-            y=1.15,
-            showactive=True,
-            buttons=buttons
-        )]
+        plot_bgcolor='white',
+        paper_bgcolor='white',
+        font=dict(color='black'),
+        title_font=dict(color='black'),
+        updatemenus=[
+            dict(
+                type="dropdown",
+                direction="down",
+                x=0.9,
+                y=1.15,
+                showactive=True,
+                buttons=buttons
+            ),
+            dict(
+                type="buttons",
+                direction="left",
+                x=0.02,
+                y=1.15,
+                showactive=True,
+                buttons=[
+                    dict(
+                        args=[{
+                            "plot_bgcolor": "white",
+                            "paper_bgcolor": "white",
+                            "font.color": "black",
+                            "title.font.color": "black",
+                            "xaxis.gridcolor": "lightgray",
+                            "xaxis.zerolinecolor": "lightgray",
+                            "xaxis.color": "black",
+                            "yaxis.gridcolor": "lightgray", 
+                            "yaxis.zerolinecolor": "lightgray",
+                            "yaxis.color": "black",
+                            "xaxis2.gridcolor": "lightgray",
+                            "xaxis2.zerolinecolor": "lightgray", 
+                            "xaxis2.color": "black",
+                            "yaxis2.gridcolor": "lightgray",
+                            "yaxis2.zerolinecolor": "lightgray",
+                            "yaxis2.color": "black",
+                            "xaxis3.gridcolor": "lightgray",
+                            "xaxis3.zerolinecolor": "lightgray",
+                            "xaxis3.color": "black",
+                            "yaxis3.gridcolor": "lightgray",
+                            "yaxis3.zerolinecolor": "lightgray",
+                            "yaxis3.color": "black",
+                            "xaxis4.gridcolor": "lightgray",
+                            "xaxis4.zerolinecolor": "lightgray",
+                            "xaxis4.color": "black",
+                            "yaxis4.gridcolor": "lightgray",
+                            "yaxis4.zerolinecolor": "lightgray",
+                            "yaxis4.color": "black",
+                            "xaxis5.gridcolor": "lightgray",
+                            "xaxis5.zerolinecolor": "lightgray",
+                            "xaxis5.color": "black",
+                            "yaxis5.gridcolor": "lightgray",
+                            "yaxis5.zerolinecolor": "lightgray",
+                            "yaxis5.color": "black"
+                        }],
+                        label="☀️ Light",
+                        method="relayout"
+                    ),
+                    dict(
+                        args=[{
+                            "plot_bgcolor": "black",
+                            "paper_bgcolor": "black", 
+                            "font.color": "white",
+                            "title.font.color": "white",
+                            "xaxis.gridcolor": "gray",
+                            "xaxis.zerolinecolor": "gray",
+                            "xaxis.color": "white",
+                            "yaxis.gridcolor": "gray",
+                            "yaxis.zerolinecolor": "gray", 
+                            "yaxis.color": "white",
+                            "xaxis2.gridcolor": "gray",
+                            "xaxis2.zerolinecolor": "gray",
+                            "xaxis2.color": "white",
+                            "yaxis2.gridcolor": "gray",
+                            "yaxis2.zerolinecolor": "gray",
+                            "yaxis2.color": "white",
+                            "xaxis3.gridcolor": "gray",
+                            "xaxis3.zerolinecolor": "gray",
+                            "xaxis3.color": "white",
+                            "yaxis3.gridcolor": "gray",
+                            "yaxis3.zerolinecolor": "gray",
+                            "yaxis3.color": "white",
+                            "xaxis4.gridcolor": "gray",
+                            "xaxis4.zerolinecolor": "gray",
+                            "xaxis4.color": "white",
+                            "yaxis4.gridcolor": "gray",
+                            "yaxis4.zerolinecolor": "gray",
+                            "yaxis4.color": "white",
+                            "xaxis5.gridcolor": "gray",
+                            "xaxis5.zerolinecolor": "gray",
+                            "xaxis5.color": "white",
+                            "yaxis5.gridcolor": "gray",
+                            "yaxis5.zerolinecolor": "gray",
+                            "yaxis5.color": "white"
+                        }],
+                        label="🌙 Dark",
+                        method="relayout"
+                    )
+                ]
+            )
+        ]
     )
     
-    fig.update_xaxes(title_text="Time (s)", row=2, col=1, gridcolor='gray', zerolinecolor='gray')
-    fig.update_xaxes(title_text="Time (s)", row=3, col=1, gridcolor='gray', zerolinecolor='gray')
-    fig.update_xaxes(title_text="Time (s)", row=4, col=1, gridcolor='gray', zerolinecolor='gray')  # New for acceleration
-    fig.update_yaxes(title_text="Speed (m/s)", row=3, col=1, gridcolor='gray', zerolinecolor='gray')
-    fig.update_yaxes(title_text="Acceleration (m/s²)", row=4, col=1, gridcolor='gray', zerolinecolor='gray')  # New for acceleration
+    fig.update_xaxes(title_text="Time (s)", row=2, col=1, gridcolor='lightgray', zerolinecolor='lightgray', color='black')
+    fig.update_xaxes(title_text="Time (s)", row=3, col=1, gridcolor='lightgray', zerolinecolor='lightgray', color='black')
+    fig.update_xaxes(title_text="Time (s)", row=4, col=1, gridcolor='lightgray', zerolinecolor='lightgray', color='black')  # New for acceleration
+    fig.update_xaxes(title_text="Longitudinal Acceleration (m/s²)", row=2, col=2, gridcolor='lightgray', zerolinecolor='lightgray', color='black')  # Acceleration circle
+    fig.update_yaxes(title_text="Speed (m/s)", row=3, col=1, gridcolor='lightgray', zerolinecolor='lightgray', color='black')
+    fig.update_yaxes(title_text="Acceleration (m/s²)", row=4, col=1, gridcolor='lightgray', zerolinecolor='lightgray', color='black')  # New for acceleration
     fig.update_yaxes(title_text="Throttle / Brake / Steering", row=2, col=1, 
-                     gridcolor='gray', zerolinecolor='gray',
+                     gridcolor='lightgray', zerolinecolor='lightgray', color='black',
                      range=[-1, 2])  # Set y-axis range for inputs
-    fig.update_yaxes(scaleanchor="x", scaleratio=1, row=1, col=1, gridcolor='gray', zerolinecolor='gray')
+    fig.update_yaxes(title_text="Lateral Acceleration (m/s²)", row=2, col=2, gridcolor='lightgray', zerolinecolor='lightgray', color='black')  # Acceleration circle
+    fig.update_yaxes(scaleanchor="x", scaleratio=1, row=1, col=1, gridcolor='lightgray', zerolinecolor='lightgray', color='black')
+    fig.update_yaxes(scaleanchor="x5", scaleratio=1, row=2, col=2, gridcolor='lightgray', zerolinecolor='lightgray', color='black')  # Make acceleration circle square
 
     fig.show()
